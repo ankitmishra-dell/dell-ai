@@ -379,7 +379,7 @@ class TestAmdGpuInfoGetter:
         assert info == {
             "amd": AmdDriverInfo.model_validate(
                 {
-                    "cuda_version_from_rocm_smi": "7.2.1",
+                    "rocm_smi_version": "7.2.1",
                     "driver_version": "6.16.13",
                     "amd_ctk_version": "1.2.0",
                 }
@@ -393,7 +393,7 @@ class TestAmdGpuInfoGetter:
         assert info == {
             "amd": AmdDriverInfo.model_validate(
                 {
-                    "cuda_version_from_rocm_smi": "7.2.1",
+                    "rocm_smi_version": "7.2.1",
                     "driver_version": "6.18.8",
                     "amd_ctk_version": "1.2.0",
                 }
@@ -408,7 +408,7 @@ class TestAmdGpuInfoGetter:
         assert info == {
             "amd": AmdDriverInfo.model_validate(
                 {
-                    "cuda_version_from_rocm_smi": "7.2.1",
+                    "rocm_smi_version": "7.2.1",
                     "driver_version": "6.16.13",
                     "amd_ctk_version": None,
                 }
@@ -849,7 +849,7 @@ class TestAmdInfoPopulator:
 
     def test_amd_smi_version_root(self, amd_smi_root, amd_ctk_version):
         info = AMDInfoPopulater()
-        assert info.details.cuda_version_from_rocm_smi == "7.2.1"
+        assert info.details.rocm_smi_version == "7.2.1"
         assert info.details.driver_version == "6.16.13"
         assert info.details.amd_ctk_version == "1.2.0"
 
@@ -857,7 +857,7 @@ class TestAmdInfoPopulator:
         self, amd_smi_nonroot, kubectl_get_nodes_amd, amd_ctk_version
     ):
         info = AMDInfoPopulater()
-        assert info.details.cuda_version_from_rocm_smi == "7.2.1"
+        assert info.details.rocm_smi_version == "7.2.1"
         assert info.details.driver_version == "6.18.8"
         assert info.details.amd_ctk_version == "1.2.0"
 
@@ -866,7 +866,7 @@ class TestAmdInfoPopulator:
             ["amd-smi", fp.any()], returncode=1, stdout="amd-smi: command not found"
         )
         info = AMDInfoPopulater()
-        assert info.details.cuda_version_from_rocm_smi is None
+        assert info.details.rocm_smi_version is None
         assert info.details.driver_version == "6.18.8"
         assert info.details.amd_ctk_version == "1.2.0"
 
@@ -883,7 +883,7 @@ class TestAmdInfoPopulator:
 
         info = AMDInfoPopulater()
         assert info.details.driver_version is None
-        assert info.details.cuda_version_from_rocm_smi is None
+        assert info.details.rocm_smi_version is None
         assert info.details.amd_ctk_version is None
 
 
@@ -954,22 +954,14 @@ class TestDriverInfoCompare:
         Similar test as above for AMD
         """
         # all versions in allowed range
-        success = AmdDriverInfo(
-            cuda_version_from_rocm_smi="12.8", driver_version="566.125.15"
-        )
+        success = AmdDriverInfo(rocm_smi_version="12.8.1", driver_version="566.125.15")
         others = [
-            AmdDriverInfo(
-                cuda_version_from_rocm_smi="12.8", driver_version="594.564.56"
-            ),
-            AmdDriverInfo(
-                cuda_version_from_rocm_smi="13.0", driver_version="566.125.15"
-            ),
+            AmdDriverInfo(rocm_smi_version="12.8.1", driver_version="594.564.56"),
+            AmdDriverInfo(rocm_smi_version="13.0.0", driver_version="566.125.15"),
         ]
 
         # lower cuda version
-        failure = AmdDriverInfo(
-            cuda_version_from_rocm_smi="11.0", driver_version="566.125.15"
-        )
+        failure = AmdDriverInfo(rocm_smi_version="11.0.1", driver_version="566.125.15")
 
         # no output
         success.compare(others)
@@ -978,11 +970,13 @@ class TestDriverInfoCompare:
         # should print error for cuda version
         failure.compare(others)
         printer_echo_mock.assert_called_once_with(
-            Printer.minimum_styled(
-                self_value="11.0",
-                supported_values=["12.8", "13.0"],
-                tag="CUDA version from ROCM SMI",
-                attr_name="cuda_version_from_rocm_smi",
+            Printer.version_compare_styled(
+                self_value="11.0.1",
+                min_supported_value="12.8.1",
+                max_supported_value="13.0.0",
+                tag="ROCM SMI Version",
+                attr_name="rocm_smi_version",
+                greater=False,
             ),
             level="error",
         )

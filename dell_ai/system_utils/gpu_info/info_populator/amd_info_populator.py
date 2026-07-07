@@ -29,7 +29,7 @@ class AMDInfoPopulater(GPUInfoPopulater):
             logger.warning(f"Could not decode amd_smi_version {amd_smi_version}")
             return
 
-        self.details.cuda_version_from_rocm_smi = amd_smi_version_dict["rocm_version"]
+        self.details.rocm_smi_version = amd_smi_version_dict["rocm_version"]
         if "error" not in amd_smi_version_dict["amdgpu_version"].lower():
             self.details.driver_version = amd_smi_version_dict["amdgpu_version"]
 
