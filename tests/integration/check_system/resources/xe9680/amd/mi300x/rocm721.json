@@ -32,7 +32,7 @@
                 }
             },
             "amd": {
-                "cuda_version_from_rocm_smi": "7.2.1",
+                "rocm_smi_version": "7.2.1",
                 "driver_version": "6.16.13"
             }
         },
